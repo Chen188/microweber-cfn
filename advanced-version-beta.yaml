@@ -1,0 +1,637 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Creates a VPC and a ELB with a EC2 Target Group Associated
+
+Parameters:
+    SSHKeyName:
+        Description: 'Name of the ec2 key you need one to use this template'
+        Type: 'AWS::EC2::KeyPair::KeyName'
+        Default: 'choose-key'
+    DBUsername:
+        Description: Database Admin Username
+        Type: String
+        Default: admin
+        AllowedPattern: ".+"
+        ConstraintDescription: enter your DB username
+    DBPassword:
+        Description: MySQL Database password(at least 8 characters)
+        Type: String
+        ConstraintDescription: enter your password
+        MinLength: 8
+        NoEcho: 'true'
+    MicroweberUsername:
+        Description: Microweber Administrator Username, you will use this to edit your website
+        Type: String
+        Default: admin
+        ConstraintDescription: enter your username
+    MicroweberPassword:
+        Description: Microweber Administrator Password, you will use this to edit your website
+        Type: String
+        AllowedPattern: ".+"
+        ConstraintDescription: enter your password
+        NoEcho: 'true'
+
+Mappings:
+  AMZLinux2IdMap:
+    ap-northeast-1:
+      Linux2: ami-02892a4ea9bfa2192
+    ap-northeast-2:
+      Linux2: ami-08c64544f5cfcddd0
+    ap-northeast-3:
+      Linux2: ami-09ec82600a05bc23a
+    ap-south-1:
+      Linux2: ami-0a23ccb2cdd9286bb
+    ap-southeast-1:
+      Linux2: ami-082105f875acab993
+    ap-southeast-2:
+      Linux2: ami-0210560cedcb09f07
+    ca-central-1:
+      Linux2: ami-0e2407e55b9816758
+    eu-central-1:
+      Linux2: ami-07df274a488ca9195
+    eu-north-1:
+      Linux2: ami-0f0b4cb72cf3eadf3
+    eu-west-1:
+      Linux2: ami-0d1bf5b68307103c2
+    eu-west-2:
+      Linux2: ami-0dbec48abfe298cab
+    eu-west-3:
+      Linux2: ami-072056ff9d3689e7b
+    sa-east-1:
+      Linux2: ami-09b9b17384f68fd7c
+    us-east-1:
+      Linux2: ami-087c17d1fe0178315
+    us-east-2:
+      Linux2: ami-00dfe2c7ce89a450b
+    us-west-1:
+      Linux2: ami-011996ff98de391d1
+    us-west-2:
+      Linux2: ami-0c2d06d50ce30b442
+  NetworkToSubnet:
+    "10.0.0.0":
+        PubSubnetZoneA: "10.0.10.0/24"
+        PrivSubnetZoneA: "10.0.20.0/24"
+        PubSubnetZoneB: "10.0.30.0/24"
+        PrivSubnetZoneB: "10.0.40.0/24"
+
+Resources:
+
+    ################## Network Section ##################
+    # VPC
+    VPC:
+        Type: 'AWS::EC2::VPC'
+        Properties:
+            CidrBlock:
+                'Fn::Join': [ '/', [ '10.0.0.0', '16' ] ]
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+            InstanceTenancy: 'default'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      Ref: 'AWS::StackName'
+
+    # Internet accessable subnet in the first availability zone
+    PubSubnetZoneA:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
+                - '0'
+                - Fn::GetAZs:
+                    Ref: 'AWS::Region'
+            CidrBlock:
+                Fn::FindInMap:
+                - NetworkToSubnet
+                - '10.0.0.0'
+                - PubSubnetZoneA
+            MapPublicIpOnLaunch: 'True'
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Public', 'Zone A', !Ref 'AWS::StackName' ] ]
+
+    # Non-internet accessable subnet in the first availability zone
+    PrivSubnetZoneA:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
+                - '0'
+                - Fn::GetAZs:
+                    Ref: 'AWS::Region'
+            CidrBlock:
+                Fn::FindInMap:
+                - NetworkToSubnet
+                - '10.0.0.0'
+                - PrivSubnetZoneA
+            MapPublicIpOnLaunch: 'False'
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Private', 'Zone A', !Ref 'AWS::StackName' ] ]
+
+    # Internet accessable subnet in the second availability zone
+    PubSubnetZoneB:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
+                - '1'
+                - Fn::GetAZs:
+                    Ref: 'AWS::Region'
+            CidrBlock:
+                Fn::FindInMap:
+                - NetworkToSubnet
+                - '10.0.0.0'
+                - PubSubnetZoneB
+            MapPublicIpOnLaunch: 'True'
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Public', 'Zone B', !Ref 'AWS::StackName' ] ]
+
+    # Non-internet accessable subnet in the second availability zone
+    PrivSubnetZoneB:
+        Type: 'AWS::EC2::Subnet'
+        Properties:
+            AvailabilityZone:
+                Fn::Select:
+                - '1'
+                - Fn::GetAZs:
+                    Ref: 'AWS::Region'
+            CidrBlock:
+                Fn::FindInMap:
+                - NetworkToSubnet
+                - '10.0.0.0'
+                - PrivSubnetZoneB
+            MapPublicIpOnLaunch: 'False'
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Private', 'Zone B', !Ref 'AWS::StackName' ] ]
+
+    # Gateway to the internet
+    InternetGateway:
+        Type: 'AWS::EC2::InternetGateway'
+        Properties:
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      Ref: 'AWS::StackName'
+
+    # Associate the gateway to the VPC
+    GatewayAttachment:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            InternetGatewayId:
+                Ref: 'InternetGateway'
+            VpcId:
+                Ref: 'VPC'
+
+    # Routing table for the public subnet in availability zone A
+    RouteTablePubZoneA:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Public', 'Zone A', !Ref 'AWS::StackName' ] ]
+
+    # Routing table for the public subnet in availability zone B
+    RouteTablePubZoneB:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Public', 'Zone B', !Ref 'AWS::StackName' ] ]
+
+    # Route traffic through the internet gateway
+    RoutePubZoneA:
+        DependsOn:
+            - InternetGateway
+        Type: AWS::EC2::Route
+        Properties:
+            DestinationCidrBlock: '0.0.0.0/0'
+            GatewayId:
+                Ref: 'InternetGateway'
+            RouteTableId:
+                Ref: 'RouteTablePubZoneA'
+
+    # Route traffic through the internet gateway
+    RoutePubZoneB:
+        DependsOn:
+            - InternetGateway
+        Type: AWS::EC2::Route
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId:
+                Ref: 'InternetGateway'
+            RouteTableId:
+                Ref: 'RouteTablePubZoneB'
+
+    # Associate public subnet to its routing table
+    RouteAssociationPubSubnetZoneA:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: 'PubSubnetZoneA'
+            RouteTableId:
+                Ref: 'RouteTablePubZoneA'
+
+    # Associate public subnet to its routing table
+    RouteAssociationPubSubnetZoneB:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: 'PubSubnetZoneB'
+            RouteTableId:
+                Ref: 'RouteTablePubZoneB'
+
+    # Routing table for the private subnet in availability zone A
+    RouteTablePrivZoneA:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Private', 'Zone A', !Ref 'AWS::StackName' ] ]
+
+    # Routing table for the private subnet in availability zone B
+    RouteTablePrivZoneB:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId:
+                Ref: 'VPC'
+            Tags:
+                - Key: 'Name'
+                  Value:
+                      'Fn::Join': [ ':', [ 'Private', 'Zone B', !Ref 'AWS::StackName' ] ]
+
+    # Associate the private subnet with its routing table
+    RouteAssociationPrivSubnetZoneA:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: 'PrivSubnetZoneA'
+            RouteTableId:
+                Ref: 'RouteTablePrivZoneA'
+
+    # Associate the private subnet with its routing table
+    RouteAssociationPrivSubnetZoneB:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            SubnetId:
+                Ref: 'PrivSubnetZoneB'
+            RouteTableId:
+                Ref: 'RouteTablePrivZoneB'
+
+
+
+    ################## RDS Section ##################
+
+    DBInstance:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        DBInstanceIdentifier:
+          Ref: 'AWS::StackName'
+        DBName: MicroweberDB
+        Engine: MySQL
+        MasterUsername:
+          Ref: DBUsername
+        MasterUserPassword:
+          Ref: DBPassword
+        DBInstanceClass: db.t3.medium
+        DBSecurityGroups:
+        - Ref: DBSecurityGroup
+        AllocatedStorage: '64'
+        DBSubnetGroupName:
+          Ref: DBSubnetGroup
+    
+    DBSubnetGroup:
+        Type: AWS::RDS::DBSubnetGroup
+        Properties: 
+          DBSubnetGroupDescription: DB is within private subnets
+          SubnetIds: 
+            - Ref: PrivSubnetZoneA
+            - Ref: PrivSubnetZoneB
+        
+
+    DBSecurityGroup:
+      Type: AWS::RDS::DBSecurityGroup
+      Properties:
+        EC2VpcId: 
+          Ref: "VPC"
+        DBSecurityGroupIngress:
+          EC2SecurityGroupId:
+            Ref: EC2SecurityGroup
+        GroupDescription: Frontend Access
+
+
+    ################## CDN Section ##################
+
+    CloudFront:
+      Type: 'AWS::CloudFront::Distribution'
+      Properties:
+        DistributionConfig:
+          Origins:
+            - DomainName: !GetAtt ApplicationLoadBalancer.DNSName
+              Id: !Ref ApplicationLoadBalancer
+              CustomOriginConfig:
+                HTTPPort: '80'
+                OriginProtocolPolicy: http-only
+          Enabled: true
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - GET
+              - HEAD
+              - DELETE
+              - OPTIONS
+              - PATCH
+              - POST
+              - PUT
+            TargetOriginId: !Ref 'ApplicationLoadBalancer'
+            ViewerProtocolPolicy: allow-all
+            ForwardedValues:
+              QueryString: 'true'
+              Cookies:
+                Forward: all
+              Headers:
+                - Origin
+                - Referer
+                - User-Agent
+                - Host
+          PriceClass: PriceClass_All
+          ViewerCertificate:
+            CloudFrontDefaultCertificate: true
+          
+
+    ################## EFS section ##################
+
+    FileSystem:
+      Type: AWS::EFS::FileSystem
+      Properties:
+        Encrypted: 'true'
+        BackupPolicy:
+          Status: ENABLED
+
+
+    MountTargetA:
+      Type: AWS::EFS::MountTarget
+      Properties: 
+        FileSystemId: !Ref FileSystem
+        SubnetId: !Ref PrivSubnetZoneA
+        SecurityGroups: 
+          - !Ref MountTargetSecurityGroup
+
+    MountTargetB:
+      Type: AWS::EFS::MountTarget
+      Properties:
+        FileSystemId: !Ref FileSystem
+        SubnetId: !Ref PrivSubnetZoneB
+        SecurityGroups:
+          - !Ref MountTargetSecurityGroup
+
+
+    MountTargetSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: FileSystem Security Group
+        VpcId: !Ref VPC
+        GroupName: EFS Microweber Group
+        SecurityGroupIngress:
+          - IpProtocol: "tcp"
+            FromPort: 2049
+            ToPort: 2049
+            SourceSecurityGroupId: !Ref EC2SecurityGroup
+
+
+################## Launch Config And ELB Section ##################
+
+    # EC2 Security Group Allowing Port 22 and 80 from anywhere
+    EC2SecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: 'SSH and Port 80'
+            VpcId:
+              Ref: VPC
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: 80
+                  ToPort: 80
+                  SourceSecurityGroupId:
+                      Ref: ELBSecurityGroup
+
+    # ELB Security Group allowing Port 80 from anywhere
+    ELBSecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupDescription: 'Port 80'
+            VpcId:
+              Ref: VPC
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: 80
+                  ToPort: 80
+                  CidrIp: 0.0.0.0/0
+
+    LaunchConfig:
+      DependsOn: 
+        - DBInstance
+      Type: 'AWS::AutoScaling::LaunchConfiguration'
+      Properties:
+        ImageId: !FindInMap
+          - AMZLinux2IdMap
+          - !Ref 'AWS::Region'
+          - Linux2
+        InstanceType: m6g.medium
+        KeyName: !Ref SSHKeyName
+        SecurityGroups:
+          - !Ref EC2SecurityGroup
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeType: gp3
+              VolumeSize: '30'
+              DeleteOnTermination: 'false'
+              Encrypted: 'true'
+        UserData:
+          Fn::Base64: 
+            !Sub |
+              #!/bin/bash
+              VERSION=1.2.9
+              yum update -y
+              amazon-linux-extras install php7.4 nginx1 -y
+              amazon-linux-extras enable php7.4
+              yum clean metadata
+              systemctl start nginx 
+              systemctl enable nginx
+              yum install amazon-efs-utils git php-mbstring php-dom php-gd php-fpm -y
+              systemctl start php-fpm
+              systemctl enable php-fpm
+              efsID=${FileSystem}
+              mount -t efs -o tls $efsID:/ /mnt
+              FILE="/mnt/v$VERSION.zip"
+              if [ -f "$FILE" ]; then
+                echo "already downloaded"
+              else
+                cd /mnt
+                wget https://github.com/microweber/microweber/archive/refs/tags/v$VERSION.zip
+                unzip v$VERSION.zip
+                mv microweber-$VERSION microweber
+              fi
+              cd /var
+              mkdir www
+              cd www
+              cp -R /mnt/microweber /var/www/
+              umount /mnt
+              mount -t efs -o tls $efsID:/microweber/storage /var/www/microweber/storage
+              mount -t efs -o tls $efsID:/microweber/userfiles /var/www/microweber/userfiles
+              mount -t efs -o tls $efsID:/microweber/config /var/www/microweber/config
+              # chmod 777 -R microweber
+              cd microweber
+              export HOME=/root
+              php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+              php composer-setup.php
+              mv composer.phar /usr/bin/composer
+              composer install
+              composer update
+              cd /etc/nginx/
+              sed -i 's+/usr/share/nginx/html+/var/www/microweber+g' nginx.conf
+              cd default.d
+              printf "location / {\n\ttry_files "$'\x24'"uri "$'\x24'"uri/ /index.php"$'\x24'"is_args"$'\x24'"args;\n}" > web.conf
+              systemctl restart nginx
+              systemctl restart php-fpm
+              cd /var/www/microweber
+              php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword}
+              cd /var/www
+              #chmod 777 -R microweber
+              chown apache:apache -R microweber
+
+
+    ApplicationLoadBalancer:
+      Type: AWS::ElasticLoadBalancing::LoadBalancer
+      Properties:
+        Scheme: internet-facing # or internal
+        CrossZone: 'true'
+        Subnets:
+        - Ref: PubSubnetZoneA
+        - Ref: PubSubnetZoneB
+        SecurityGroups:
+        - Ref: ELBSecurityGroup
+        Listeners:
+        - LoadBalancerPort: '80'
+          InstancePort: '80'
+          Protocol: HTTP
+        HealthCheck:
+          Target: HTTP:80/
+          HealthyThreshold: '3'
+          UnhealthyThreshold: '8'
+          Interval: '60'
+          Timeout: '5'
+
+    ################## Auto Scaling section ##################
+
+    WebServerGroup:
+      Type: 'AWS::AutoScaling::AutoScalingGroup'
+      DependsOn: 
+      - MountTargetA
+      - MountTargetB
+      Properties:
+        VPCZoneIdentifier:
+        - Ref: PubSubnetZoneA
+        - Ref: PubSubnetZoneB
+        LaunchConfigurationName: !Ref LaunchConfig
+        MinSize: 1
+        MaxSize: 4
+        LoadBalancerNames:
+          - !Ref ApplicationLoadBalancer
+        
+
+    WebServerScaleUpPolicy:
+      Type: 'AWS::AutoScaling::ScalingPolicy'
+      Properties:
+        AdjustmentType: ChangeInCapacity
+        AutoScalingGroupName: !Ref WebServerGroup
+        Cooldown: '60'
+        ScalingAdjustment: '1'
+
+    WebServerScaleDownPolicy:
+      Type: 'AWS::AutoScaling::ScalingPolicy'
+      Properties:
+        AdjustmentType: ChangeInCapacity
+        AutoScalingGroupName: !Ref WebServerGroup
+        Cooldown: '60'
+        ScalingAdjustment: '-1'
+
+    CPUAlarmHigh:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmDescription: Scale-up if CPU > 70% for 6 minutes
+        MetricName: CPUUtilization
+        Namespace: AWS/EC2
+        Statistic: Average
+        Period: '180'
+        EvaluationPeriods: '2'
+        Threshold: '70'
+        AlarmActions:
+          - !Ref WebServerScaleUpPolicy
+        Dimensions:
+          - Name: AutoScalingGroupName
+            Value: !Ref WebServerGroup
+        ComparisonOperator: GreaterThanThreshold
+    CPUAlarmLow:
+      Type: 'AWS::CloudWatch::Alarm'
+      Properties:
+        AlarmDescription: Scale-down if CPU < 50% for 6 minutes
+        MetricName: CPUUtilization
+        Namespace: AWS/EC2
+        Statistic: Average
+        Period: '180'
+        EvaluationPeriods: '2'
+        Threshold: '50'
+        AlarmActions:
+          - !Ref WebServerScaleDownPolicy
+        Dimensions:
+          - Name: AutoScalingGroupName
+            Value: !Ref WebServerGroup
+        ComparisonOperator: LessThanThreshold
+
+    
+
+
+
+
+Outputs:
+    VPC:
+      Description: 'Virtual Private Cloud'
+      Value:
+        Ref: 'VPC'
+    ALBHostName:
+      Description: 'Application Load Balancer Hostname'
+      Value:
+        !GetAtt ApplicationLoadBalancer.DNSName
+    ApplicationLoadBalancer:
+      Description: 'Application Load Balancer'
+      Value:
+        Ref: ApplicationLoadBalancer
+    MicroweberLogin:
+      Description: 'Microweber Login URL'
+      Value:
+        'Fn::Join': [ '/', [ !GetAtt CloudFront.DNSName, 'login' ] ]
+        !Join:
+        
