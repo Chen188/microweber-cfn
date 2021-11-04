@@ -31,41 +31,42 @@ Parameters:
         NoEcho: 'true'
 
 Mappings:
-  AMZLinux2IdMap:
-    ap-northeast-1:
-      Linux2: ami-02892a4ea9bfa2192
-    ap-northeast-2:
-      Linux2: ami-08c64544f5cfcddd0
-    ap-northeast-3:
-      Linux2: ami-09ec82600a05bc23a
-    ap-south-1:
-      Linux2: ami-0a23ccb2cdd9286bb
-    ap-southeast-1:
-      Linux2: ami-082105f875acab993
-    ap-southeast-2:
-      Linux2: ami-0210560cedcb09f07
-    ca-central-1:
-      Linux2: ami-0e2407e55b9816758
-    eu-central-1:
-      Linux2: ami-07df274a488ca9195
-    eu-north-1:
-      Linux2: ami-0f0b4cb72cf3eadf3
-    eu-west-1:
-      Linux2: ami-0d1bf5b68307103c2
-    eu-west-2:
-      Linux2: ami-0dbec48abfe298cab
-    eu-west-3:
-      Linux2: ami-072056ff9d3689e7b
-    sa-east-1:
-      Linux2: ami-09b9b17384f68fd7c
-    us-east-1:
-      Linux2: ami-087c17d1fe0178315
-    us-east-2:
-      Linux2: ami-00dfe2c7ce89a450b
-    us-west-1:
-      Linux2: ami-011996ff98de391d1
-    us-west-2:
-      Linux2: ami-0c2d06d50ce30b442
+    AMZLinux2IdMap:
+      ap-northeast-1:
+        Linux2: ami-07dbb3f6fda73863a
+      ap-northeast-2:
+        Linux2: ami-07a22260f7ced4cae
+      ap-northeast-3:
+        Linux2: ami-0e35395fb2519262d
+      ap-south-1:
+        Linux2: ami-0797455770f4a82af
+      ap-southeast-1:
+        Linux2: ami-086bc9a99f6bb97fd
+      ap-southeast-2:
+        Linux2: ami-0329ff60dbd8f1f47
+      ca-central-1:
+        Linux2: ami-094a1faab10d7de6f
+      eu-central-1:
+        Linux2: ami-01f291acdc322b391
+      eu-north-1:
+        Linux2: ami-098ab20113597f07a
+      eu-west-1:
+        Linux2: ami-02da9041c892df6ee
+      eu-west-2:
+        Linux2: ami-0c5995b33fdf36bef
+      eu-west-3:
+        Linux2: ami-0126a8e63ad208ba5
+      sa-east-1:
+        Linux2: ami-02c531e539fbc4622
+      us-east-1:
+        Linux2: ami-0447addf6c74624eb
+      us-east-2:
+        Linux2: ami-047f80f2c6654c64b
+      us-west-1:
+        Linux2: ami-0e1c2ccbff6e69e4e
+      us-west-2:
+        Linux2: ami-0fceb10a0f8f300b2
+
   NetworkToSubnet:
     "10.0.0.0":
         PubSubnetZoneA: "10.0.10.0/24"
