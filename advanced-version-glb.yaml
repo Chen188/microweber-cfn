@@ -66,6 +66,10 @@ Mappings:
         Linux2: ami-0e1c2ccbff6e69e4e
       us-west-2:
         Linux2: ami-0fceb10a0f8f300b2
+      cn-north-1:
+        Linux2: ami-04e9667cc5b3853a1
+      cn-northwest-1:
+        Linux2: ami-006851d59db0a1d1c
 
   NetworkToSubnet:
     "10.0.0.0":

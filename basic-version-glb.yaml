@@ -69,7 +69,8 @@ Mappings:
     cn-north-1:
       Linux2: ami-01b887d5e264569f5
     cn-northwest-1:
-      Linux: ami-028584814b5504f5b
+      Linux2: ami-028584814b5504f5b
+
   NetworkToSubnet:
     "10.0.0.0":
         PubSubnetZoneA: "10.0.10.0/24"
