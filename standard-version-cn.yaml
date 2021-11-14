@@ -482,7 +482,7 @@ Resources:
           - AMZLinux2IdMap
           - !Ref 'AWS::Region'
           - Linux2
-        InstanceType: t3.micro
+        InstanceType: t2.micro
         KeyName: !Ref SSHKeyName
         SecurityGroups:
           - !Ref EC2SecurityGroup
