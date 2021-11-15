@@ -377,7 +377,6 @@ Resources:
 
               sudo -u apache -- sh -c \
                 "composer install && \
-                composer update && \
                 php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} storage/database.sqlite MicroweberDB ${DBUsername} ${DBPassword} -t new-world -d 1"
 
               cd /etc/nginx/
