@@ -484,7 +484,7 @@ Resources:
           - AMZLinux2IdMap
           - !Ref 'AWS::Region'
           - Linux2
-        InstanceType: m5.large
+        InstanceType: m6g.medium
         KeyName: !Ref SSHKeyName
         SecurityGroups:
           - !Ref EC2SecurityGroup
