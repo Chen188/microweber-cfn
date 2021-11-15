@@ -31,45 +31,45 @@ Parameters:
         NoEcho: 'true'
 
 Mappings:
-    AMZLinux2IdMap:
-      ap-northeast-1:
-        Linux2: ami-07dbb3f6fda73863a
-      ap-northeast-2:
-        Linux2: ami-07a22260f7ced4cae
-      ap-northeast-3:
-        Linux2: ami-0e35395fb2519262d
-      ap-south-1:
-        Linux2: ami-0797455770f4a82af
-      ap-southeast-1:
-        Linux2: ami-086bc9a99f6bb97fd
-      ap-southeast-2:
-        Linux2: ami-0329ff60dbd8f1f47
-      ca-central-1:
-        Linux2: ami-094a1faab10d7de6f
-      eu-central-1:
-        Linux2: ami-01f291acdc322b391
-      eu-north-1:
-        Linux2: ami-098ab20113597f07a
-      eu-west-1:
-        Linux2: ami-02da9041c892df6ee
-      eu-west-2:
-        Linux2: ami-0c5995b33fdf36bef
-      eu-west-3:
-        Linux2: ami-0126a8e63ad208ba5
-      sa-east-1:
-        Linux2: ami-02c531e539fbc4622
-      us-east-1:
-        Linux2: ami-0447addf6c74624eb
-      us-east-2:
-        Linux2: ami-047f80f2c6654c64b
-      us-west-1:
-        Linux2: ami-0e1c2ccbff6e69e4e
-      us-west-2:
-        Linux2: ami-0fceb10a0f8f300b2
-      cn-north-1:
-        Linux2: ami-04e9667cc5b3853a1
-      cn-northwest-1:
-        Linux2: ami-006851d59db0a1d1c
+  AMZLinux2IdMap:
+    ap-northeast-1:
+      Linux2: ami-07dbb3f6fda73863a
+    ap-northeast-2:
+      Linux2: ami-07a22260f7ced4cae
+    ap-northeast-3:
+      Linux2: ami-0e35395fb2519262d
+    ap-south-1:
+      Linux2: ami-0797455770f4a82af
+    ap-southeast-1:
+      Linux2: ami-086bc9a99f6bb97fd
+    ap-southeast-2:
+      Linux2: ami-0329ff60dbd8f1f47
+    ca-central-1:
+      Linux2: ami-094a1faab10d7de6f
+    eu-central-1:
+      Linux2: ami-01f291acdc322b391
+    eu-north-1:
+      Linux2: ami-098ab20113597f07a
+    eu-west-1:
+      Linux2: ami-02da9041c892df6ee
+    eu-west-2:
+      Linux2: ami-0c5995b33fdf36bef
+    eu-west-3:
+      Linux2: ami-0126a8e63ad208ba5
+    sa-east-1:
+      Linux2: ami-02c531e539fbc4622
+    us-east-1:
+      Linux2: ami-0447addf6c74624eb
+    us-east-2:
+      Linux2: ami-047f80f2c6654c64b
+    us-west-1:
+      Linux2: ami-0e1c2ccbff6e69e4e
+    us-west-2:
+      Linux2: ami-0fceb10a0f8f300b2
+    cn-north-1:
+      Linux2: ami-04e9667cc5b3853a1
+    cn-northwest-1:
+      Linux2: ami-006851d59db0a1d1c
 
   NetworkToSubnet:
     "10.0.0.0":
