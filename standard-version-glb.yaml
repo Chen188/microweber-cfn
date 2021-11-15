@@ -497,9 +497,9 @@ Resources:
           Fn::Base64: 
             !Sub |
               #!/bin/bash
-              VERSION=microweber-1.2.9-path-csrf-path
+              VERSION=1.2.9-path-csrf-path
               MW_INSTALL_DIR=/var/www/
-              MW_PKG_URL=https://mw-binc.s3.eu-central-1.amazonaws.com/assets/$VERSION.zip
+              MW_PKG_URL=https://mw-binc.s3.eu-central-1.amazonaws.com/assets/v$VERSION.zip
               
               yum update -y
               amazon-linux-extras install php7.4 nginx1 -y
@@ -511,20 +511,20 @@ Resources:
               efsID=${FileSystem}
               mount -t efs -o tls $efsID:/ /mnt
               chown apache:apache /mnt
-              FILE="/mnt/$VERSION.zip"
+              FILE="/mnt/v$VERSION.zip"
               if ! [ -f "$FILE" ]; then
                 cd /mnt
                 sudo -u apache -- sh -c \
-                  "wget $MW_PKG_URL && unzip $FILE && \
-                  ln -s /mnt/$VERSION /mnt/microweber"
+                  "wget $MW_PKG_URL && unzip -q $FILE && \
+                  ln -s /mnt/microweber-$VERSION /mnt/microweber"
               fi
 
               mkdir -p $MW_INSTALL_DIR
               chown apache:apache $MW_INSTALL_DIR
 
               sudo -u apache -- sh -c \
-                "unzip $FILE -d $MW_INSTALL_DIR && \
-                ln -s $MW_INSTALL_DIR/$VERSION $MW_INSTALL_DIR/microweber"
+                "unzip -q $FILE -d $MW_INSTALL_DIR && \
+                ln -s $MW_INSTALL_DIR/microweber-$VERSION $MW_INSTALL_DIR/microweber"
 
               umount /mnt
               mount -t efs -o tls $efsID:/microweber/storage /var/www/microweber/storage
