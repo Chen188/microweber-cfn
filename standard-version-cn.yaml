@@ -499,11 +499,11 @@ Resources:
           Fn::Base64: 
             !Sub |
               #!/bin/bash
-              VERSION=1.2.9-path-csrf-path
+              VERSION=v1.2.9-path-csrf-path
               MW_INSTALL_DIR=/var/www/
-              MW_PKG_URL=https://mw-binc-cn.s3.cn-northwest-1.amazonaws.com.cn/assets/v$VERSION.zip
+              MW_PKG_URL=https://mw-binc-cn.s3.cn-northwest-1.amazonaws.com.cn/assets/$VERSION.zip
 
-              yum update -y
+              # yum update -y
               amazon-linux-extras install php7.4 nginx1 -y
               amazon-linux-extras enable php7.4
               yum clean metadata
@@ -513,20 +513,18 @@ Resources:
               efsID=${FileSystem}
               mount -t efs -o tls $efsID:/ /mnt
               chown apache:apache /mnt
-              FILE="/mnt/v$VERSION.zip"
+              FILE="/mnt/$VERSION.zip"
               if ! [ -f "$FILE" ]; then
                 cd /mnt
                 sudo -u apache -- sh -c \
-                  "wget $MW_PKG_URL && unzip -q $FILE && \
-                  ln -s microweber-$VERSION /mnt/microweber"
+                  "mkdir -p microweber && wget $MW_PKG_URL && unzip -q $FILE -d microweber/"
               fi
 
               mkdir -p $MW_INSTALL_DIR
               chown apache:apache $MW_INSTALL_DIR
 
               sudo -u apache -- sh -c \
-                "unzip -q $FILE -d $MW_INSTALL_DIR && \
-                ln -s $MW_INSTALL_DIR/microweber-$VERSION $MW_INSTALL_DIR/microweber"
+                "mkdir -p microweber && unzip -q $FILE -d $MW_INSTALL_DIR/microweber"
 
               umount /mnt
               mount -t efs -o tls $efsID:/microweber/storage /var/www/microweber/storage
@@ -535,13 +533,7 @@ Resources:
 
               cd $MW_INSTALL_DIR/microweber
 
-              mkdir .composer && export COMPOSER_HOME=$MW_INSTALL_DIR/microweber/.composer
-              curl -sS https://getcomposer.org/installer | php
-              mv composer.phar /usr/bin/composer
-
-              sudo -u apache -- sh -c \
-                "composer install && \
-                php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} -t new-world -d 1"
+              sudo -u apache -- sh -c "php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} -t new-world -d 1"
 
               cd /etc/nginx/
               sed -i 's+/usr/share/nginx/html+/var/www/microweber+g' nginx.conf
