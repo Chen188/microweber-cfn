@@ -514,7 +514,9 @@ Resources:
               mount -t efs -o tls $efsID:/ /mnt
               chown apache:apache /mnt
               FILE="/mnt/$VERSION.zip"
+              INSTALLED=1
               if ! [ -f "$FILE" ]; then
+                INSTALLED=0
                 cd /mnt
                 sudo -u apache -- sh -c \
                   "mkdir -p microweber && wget $MW_PKG_URL && unzip -q $FILE -d microweber/"
@@ -533,7 +535,9 @@ Resources:
 
               cd $MW_INSTALL_DIR/microweber
 
-              sudo -u apache -- sh -c "php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} -t new-world -d 1"
+              if [ $INSTALLED -eq 0 ]; then
+                sudo -u apache -- sh -c "php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} -t new-world -d 1"
+              fi
 
               cd /etc/nginx/
               sed -i 's+/usr/share/nginx/html+/var/www/microweber+g' nginx.conf
