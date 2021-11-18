@@ -546,26 +546,43 @@ Resources:
               systemctl restart nginx
               systemctl restart php-fpm
 
+    ALBListener:
+      Type: AWS::ElasticLoadBalancingV2::Listener
+      Properties:
+        DefaultActions:
+          - Type: forward
+            TargetGroupArn:
+              Ref: EC2TargetGroup
+        LoadBalancerArn:
+            Ref: ApplicationLoadBalancer
+        Port: 80
+        Protocol: HTTP
+
     ApplicationLoadBalancer:
-      Type: AWS::ElasticLoadBalancing::LoadBalancer
+      Type: AWS::ElasticLoadBalancingV2::LoadBalancer
       Properties:
         Scheme: internet-facing # or internal
-        CrossZone: 'true'
         Subnets:
         - Ref: PubSubnetZoneA
         - Ref: PubSubnetZoneB
         SecurityGroups:
         - Ref: ELBSecurityGroup
-        Listeners:
-        - LoadBalancerPort: '80'
-          InstancePort: '80'
-          Protocol: HTTP
-        HealthCheck:
-          Target: HTTP:80/
-          HealthyThreshold: '3'
-          UnhealthyThreshold: '8'
-          Interval: '60'
-          Timeout: '5'
+    
+    EC2TargetGroup:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        Properties:
+            VpcId: !Ref VPC
+            Port: 80
+            Protocol: HTTP
+            TargetType: instance
+            Matcher: 
+                HttpCode: 200
+            HealthCheckIntervalSeconds: 60
+            HealthCheckPath: /
+            HealthCheckProtocol: HTTP
+            HealthCheckTimeoutSeconds: 5
+            HealthyThresholdCount: 3
+            UnhealthyThresholdCount: 8
 
     ################## Auto Scaling section ##################
 
@@ -581,8 +598,8 @@ Resources:
         LaunchConfigurationName: !Ref LaunchConfig
         MinSize: 1
         MaxSize: 4
-        LoadBalancerNames:
-          - !Ref ApplicationLoadBalancer
+        TargetGroupARNs:
+        - Ref: EC2TargetGroup
         
 
     WebServerScaleUpPolicy:
