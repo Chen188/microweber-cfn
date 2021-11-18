@@ -502,7 +502,10 @@ Resources:
               VERSION=v1.2.9-path-csrf-path
               MW_INSTALL_DIR=/var/www/
               MW_PKG_URL=https://mw-binc.s3.eu-central-1.amazonaws.com/assets/$VERSION.zip
-              
+              efsID=${FileSystem}
+              FILE="/mnt/$VERSION.zip"
+              INSTALLED=1
+
               # yum update -y
               amazon-linux-extras install php7.4 nginx1 -y
               amazon-linux-extras enable php7.4
@@ -510,33 +513,30 @@ Resources:
               systemctl enable nginx
               yum install amazon-efs-utils git php-mbstring php-dom php-gd php-fpm -y
               systemctl enable php-fpm
-              efsID=${FileSystem}
+
               mount -t efs -o tls $efsID:/ /mnt
-              chown apache:apache /mnt
-              FILE="/mnt/$VERSION.zip"
-              INSTALLED=1
               if ! [ -f "$FILE" ]; then
                 INSTALLED=0
-                cd /mnt
+                chown apache:apache /mnt
                 sudo -u apache -- sh -c \
-                  "mkdir -p microweber && wget $MW_PKG_URL && unzip -q $FILE -d microweber/"
+                  "mkdir -p /mnt/microweber && wget $MW_PKG_URL && unzip -q $FILE -d /mnt/microweber/"
               fi
 
-              mkdir -p $MW_INSTALL_DIR
-              chown apache:apache $MW_INSTALL_DIR
-
-              sudo -u apache -- sh -c \
-                "mkdir -p microweber && unzip -q $FILE -d $MW_INSTALL_DIR/microweber"
+              mkdir -p $MW_INSTALL_DIR && \
+                chown apache:apache $MW_INSTALL_DIR && \
+                cd $MW_INSTALL_DIR && \
+                sudo -u apache -- sh -c "mkdir -p microweber && unzip -q $FILE -d microweber/"
 
               umount /mnt
-              mount -t efs -o tls $efsID:/microweber/storage /var/www/microweber/storage
-              mount -t efs -o tls $efsID:/microweber/userfiles /var/www/microweber/userfiles
-              mount -t efs -o tls $efsID:/microweber/config /var/www/microweber/config
+              echo "$efsID:/microweber/storage /var/www/microweber/storage efs _netdev,noresvport,tls 0 0" >> /etc/fstab
+              echo "$efsID:/microweber/userfiles /var/www/microweber/userfiles efs _netdev,noresvport,tls 0 0" >> /etc/fstab
+              echo "$efsID:/microweber/config /var/www/microweber/config efs _netdev,noresvport,tls 0 0" >> /etc/fstab
+              mount -fav
 
               cd $MW_INSTALL_DIR/microweber
 
               if [ $INSTALLED -eq 0 ]; then
-                sudo -u apache -- sh -c "php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} -t new-world -d 1"
+                sudo -u apache -- sh -c "php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} mysql -t new-world -d 1"
               fi
 
               cd /etc/nginx/
