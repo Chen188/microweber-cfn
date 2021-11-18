@@ -499,6 +499,7 @@ Resources:
           Fn::Base64: 
             !Sub |
               #!/bin/bash
+              set -xe
               VERSION=v1.2.9-path-csrf-path
               MW_INSTALL_DIR=/var/www/
               MW_PKG_URL=https://mw-binc.s3.eu-central-1.amazonaws.com/assets/$VERSION.zip
@@ -517,9 +518,9 @@ Resources:
               mount -t efs -o tls $efsID:/ /mnt
               if ! [ -f "$FILE" ]; then
                 INSTALLED=0
-                chown apache:apache /mnt
+                chown apache:apache /mnt && cd /mnt
                 sudo -u apache -- sh -c \
-                  "mkdir -p /mnt/microweber && wget $MW_PKG_URL && unzip -q $FILE -d /mnt/microweber/"
+                  "mkdir -p /mnt/microweber && wget -q $MW_PKG_URL && unzip -q $FILE -d /mnt/microweber/"
               fi
 
               mkdir -p $MW_INSTALL_DIR && \
@@ -599,6 +600,8 @@ Resources:
         LaunchConfigurationName: !Ref LaunchConfig
         MinSize: 1
         MaxSize: 4
+        HealthCheckGracePeriod: 500
+        HealthCheckType: ELB
         TargetGroupARNs:
         - Ref: EC2TargetGroup
         

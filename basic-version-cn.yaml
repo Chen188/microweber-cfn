@@ -350,6 +350,7 @@ Resources:
           Fn::Base64: 
             !Sub |
               #!/bin/bash
+              set -xe
               VERSION=v1.2.9-path-csrf-path
               MW_INSTALL_DIR=/var/www/
               MW_PKG_URL=https://mw-binc-cn.s3.cn-northwest-1.amazonaws.com.cn/assets/$VERSION.zip
