@@ -78,6 +78,14 @@ Mappings:
       PubSubnetZoneB: "10.0.30.0/24"
       PrivSubnetZoneB: "10.0.40.0/24"
 
+  Partition2Url:
+    aws:
+      url: https://mw-binc.s3.eu-central-1.amazonaws.com/assets/$VERSION.zip
+    aws-us-gov:
+      url: https://mw-binc.s3.eu-central-1.amazonaws.com/assets/$VERSION.zip
+    aws-cn:
+      url: https://mw-binc-cn.s3.cn-northwest-1.amazonaws.com.cn/assets/$VERSION.zip
+
 Resources:
 
     ################## Network Section ##################
@@ -497,55 +505,59 @@ Resources:
               Encrypted: 'true'
         UserData:
           Fn::Base64: 
-            !Sub |
-              #!/bin/bash
-              set -xe
-              VERSION=v1.2.9-path-csrf-path
-              MW_INSTALL_DIR=/var/www/
-              MW_PKG_URL=https://mw-binc-cn.s3.cn-northwest-1.amazonaws.com.cn/assets/$VERSION.zip
-              efsID=${FileSystem}
-              FILE="/mnt/$VERSION.zip"
-              INSTALLED=1
+            Fn::Join:
+            - "\n"
+            - - !Sub |
+                #!/bin/bash
+                set -xe
+                VERSION=v1.2.9-path-csrf-path
+                MW_INSTALL_DIR=/var/www/
+              - Fn::Join: ["=", [MW_PKG_URL, !FindInMap [ Partition2Url, !Ref AWS::Partition, url ] ] ]
+              - !Sub |
+                efsID=${FileSystem}
+                FILE="/mnt/$VERSION.zip"
+                INSTALLED=1
 
-              # yum update -y
-              amazon-linux-extras install php7.4 nginx1 -y
-              amazon-linux-extras enable php7.4
-              yum clean metadata
-              systemctl enable nginx
-              yum install amazon-efs-utils git php-mbstring php-dom php-gd php-fpm -y
-              systemctl enable php-fpm
+                # yum update -y
+                amazon-linux-extras install php7.4 nginx1 -y
+                amazon-linux-extras enable php7.4
+                yum clean metadata
+                systemctl enable nginx
+                yum install amazon-efs-utils git php-mbstring php-dom php-gd php-fpm -y
+                systemctl enable php-fpm
 
-              mount -t efs -o tls $efsID:/ /mnt
-              if ! [ -f "$FILE" ]; then
-                INSTALLED=0
-                chown apache:apache /mnt && cd /mnt
-                sudo -u apache -- sh -c \
-                  "mkdir -p /mnt/microweber && wget -q $MW_PKG_URL && unzip -q $FILE -d /mnt/microweber/"
-              fi
+                mount -t efs -o tls $efsID:/ /mnt
+                if ! [ -f "$FILE" ]; then
+                  INSTALLED=0
+                  chown apache:apache /mnt && cd /mnt
+                  sudo -u apache -- sh -c \
+                    "mkdir -p /mnt/microweber && wget -q $MW_PKG_URL && unzip -q $FILE -d /mnt/microweber/"
+                fi
 
-              mkdir -p $MW_INSTALL_DIR && \
-                chown apache:apache $MW_INSTALL_DIR && \
-                cd $MW_INSTALL_DIR && \
-                sudo -u apache -- sh -c "mkdir -p microweber && unzip -q $FILE -d microweber/"
+                mkdir -p $MW_INSTALL_DIR && \
+                  chown apache:apache $MW_INSTALL_DIR && \
+                  cd $MW_INSTALL_DIR && \
+                  sudo -u apache -- sh -c "mkdir -p microweber && unzip -q $FILE -d microweber/"
 
-              umount /mnt
-              echo "$efsID:/microweber/storage /var/www/microweber/storage efs _netdev,noresvport,tls 0 0" >> /etc/fstab
-              echo "$efsID:/microweber/userfiles /var/www/microweber/userfiles efs _netdev,noresvport,tls 0 0" >> /etc/fstab
-              echo "$efsID:/microweber/config /var/www/microweber/config efs _netdev,noresvport,tls 0 0" >> /etc/fstab
-              mount -fav
+                umount /mnt
+                echo "$efsID:/microweber/storage /var/www/microweber/storage efs _netdev,noresvport,tls 0 0" >> /etc/fstab
+                echo "$efsID:/microweber/userfiles /var/www/microweber/userfiles efs _netdev,noresvport,tls 0 0" >> /etc/fstab
+                echo "$efsID:/microweber/config /var/www/microweber/config efs _netdev,noresvport,tls 0 0" >> /etc/fstab
+                mount -fav
 
-              cd $MW_INSTALL_DIR/microweber
+                cd $MW_INSTALL_DIR/microweber
 
-              if [ $INSTALLED -eq 0 ]; then
-                sudo -u apache -- sh -c "php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} mysql -t new-world -d 1"
-              fi
+                if [ $INSTALLED -eq 0 ]; then
+                  sudo -u apache -- sh -c "php artisan microweber:install admin@site.com ${MicroweberUsername} ${MicroweberPassword} ${DBInstance.Endpoint.Address} MicroweberDB ${DBUsername} ${DBPassword} mysql -t new-world -d 1"
+                fi
 
-              cd /etc/nginx/
-              sed -i 's+/usr/share/nginx/html+/var/www/microweber+g' nginx.conf
-              cd default.d
-              printf "location / {\n\ttry_files "$'\x24'"uri "$'\x24'"uri/ /index.php"$'\x24'"is_args"$'\x24'"args;\n}" > web.conf
-              systemctl restart nginx
-              systemctl restart php-fpm
+                cd /etc/nginx/
+                sed -i 's+/usr/share/nginx/html+/var/www/microweber+g' nginx.conf
+                cd default.d
+                printf "location / {\n\ttry_files "$'\x24'"uri "$'\x24'"uri/ /index.php"$'\x24'"is_args"$'\x24'"args;\n}" > web.conf
+                systemctl restart nginx
+                systemctl restart php-fpm
+
     ALBListener:
       Type: AWS::ElasticLoadBalancingV2::Listener
       Properties:
@@ -602,7 +614,6 @@ Resources:
         HealthCheckType: ELB
         TargetGroupARNs:
         - Ref: EC2TargetGroup
-        
         
 
     WebServerScaleUpPolicy:
