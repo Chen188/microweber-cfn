@@ -510,7 +510,7 @@ Resources:
             - - !Sub |
                 #!/bin/bash
                 set -xe
-                VERSION=v1.2.9-path-csrf-path
+                VERSION=v1.2.9-patch-csrf-path
                 MW_INSTALL_DIR=/var/www/
               - Fn::Join: ["=", [MW_PKG_URL, !FindInMap [ Partition2Url, !Ref AWS::Partition, url ] ] ]
               - !Sub |

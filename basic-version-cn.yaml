@@ -361,7 +361,7 @@ Resources:
             - - !Sub |
                 #!/bin/bash
                 set -xe
-                VERSION=v1.2.9-path-csrf-path
+                VERSION=v1.2.9-patch-csrf-path
                 MW_INSTALL_DIR=/var/www/
               - Fn::Join: ["=", [MW_PKG_URL, !FindInMap [ Partition2Url, !Ref AWS::Partition, url ] ] ]
               - !Sub |
@@ -378,7 +378,7 @@ Resources:
                 cd $MW_INSTALL_DIR
                 
                 sudo -u apache -- sh -c \
-                  "mkdir -p microweber && wget $MW_PKG_URL && unzip -q $VERSION.zip -d microweber/"
+                  "mkdir -p microweber && wget -q $MW_PKG_URL && unzip -q $VERSION.zip -d microweber/"
                 
                 cd $MW_INSTALL_DIR/microweber
                 sudo -u apache -- sh -c \
