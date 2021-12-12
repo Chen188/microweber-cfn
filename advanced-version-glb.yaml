@@ -328,7 +328,7 @@ Resources:
           Ref: DBUsername
         MasterUserPassword:
           Ref: DBPassword
-        DBInstanceClass: db.t3.medium
+        DBInstanceClass: db.r6g.large
         VPCSecurityGroups:
         - !Ref DBSecurityGroup
         AllocatedStorage: '20'
@@ -553,8 +553,44 @@ Resources:
 
                 cd /etc/nginx/
                 sed -i 's+/usr/share/nginx/html+/var/www/microweber+g' nginx.conf
-                cd default.d
-                printf "location / {\n\ttry_files "$'\x24'"uri "$'\x24'"uri/ /index.php"$'\x24'"is_args"$'\x24'"args;\n}" > web.conf
+
+                cat <<EOF > /etc/nginx/default.d/php.conf
+                # pass the PHP scripts to FastCGI server
+                #
+                # See conf.d/php-fpm.conf for socket configuration
+                #
+                index index.php index.html index.htm;
+
+                set \$proxy_https '';
+                if ( \$http_cloudfront_forwarded_proto = 'https' ) {
+                    set \$proxy_https 'on';
+                }
+                if ( \$http_x_forwarded_proto = 'https' ) {
+                    set \$proxy_https 'on';
+                }
+                if ( \$scheme = 'https' ) {
+                    set \$proxy_https 'on';
+                }
+
+                location ~ \.(php|phar)(/.*)?$ {
+                    fastcgi_split_path_info ^(.+\.(?:php|phar))(/.*)$;
+
+                    fastcgi_intercept_errors on;
+                    fastcgi_index  index.php;
+                    include        fastcgi_params;
+                    fastcgi_param  SCRIPT_FILENAME  \$document_root\$fastcgi_script_name;
+                    fastcgi_param  PATH_INFO \$fastcgi_path_info;
+                    fastcgi_param  HTTPS     \$proxy_https  if_not_empty;
+                    fastcgi_pass   php-fpm;
+                }
+                EOF
+
+                cat <<EOF > /etc/nginx/default.d/web.conf
+                location / {
+                    try_files \$uri \$uri/ /index.php\$is_args\$args;
+                }
+                EOF
+
                 systemctl restart nginx
                 systemctl restart php-fpm
 
