@@ -492,7 +492,7 @@ Outputs:
     MicroweberLogin:
       Description: 'Microweber Login URL'
       Value:
-        'Fn::Join': [ '/', [ !GetAtt CloudFront.DomainName, 'login' ] ]
+        'Fn::Join': [ '/', ['http:/', !GetAtt AmazonLinuxInstance.PublicIp, 'login' ] ]
     MicroweberAdminUser:
       Description: 'Microweber Admin Username'
       Value: !Ref MicroweberUsername

@@ -717,7 +717,7 @@ Outputs:
     MicroweberLogin:
       Description: 'Microweber Login URL'
       Value:
-        'Fn::Join': [ '/', [ !GetAtt CloudFront.DomainName, 'login' ] ]
+        'Fn::Join': [ '/', [ !GetAtt ApplicationLoadBalancer.DNSName, 'login' ] ]
     MicroweberAdminUser:
       Description: 'Microweber Admin Username'
       Value: !Ref MicroweberUsername
